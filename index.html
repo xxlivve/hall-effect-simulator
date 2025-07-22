@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三维霍尔效应模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #f0f0f0;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            display: flex;
+            max-width: 1400px;
+            width: 95%;
+            height: 95vh;
+            background: rgba(20, 25, 33, 0.85);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 左侧模拟区域 */
+        .simulation-section {
+            flex: 1;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header-3d {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .header-3d h1 {
+            font-size: 32px;
+            color: #50c8ff;
+            text-shadow: 0 0 10px rgba(80, 200, 255, 0.4);
+            margin-bottom: 10px;
+            letter-spacing: 1.5px;
+        }
+        
+        .header-3d p {
+            font-size: 18px;
+            color: #a0d2ff;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .canvas-container {
+            background: rgba(10, 15, 23, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.6),
+                inset 0 0 15px rgba(50, 150, 200, 0.3);
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        #simulationCanvas {
+            background: linear-gradient(160deg, #131e28, #0c121c);
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(20, 130, 230, 0.25);
+        }
+        
+        .current-direction {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff5252;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 82, 82, 0.4);
+        }
+        
+        .current-direction::before {
+            content: "→";
+            display: inline-block;
+            margin-right: 10px;
+            font-size: 24px;
+        }
+        
+        .reset-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(80, 120, 200, 0.9);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(80, 120, 200, 0.4);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .reset-button:hover {
+            background: rgba(100, 140, 240, 1);
+            box-shadow: 0 6px 20px rgba(100, 140, 240, 0.6);
+        }
+        
+        .reset-button::before {
+            content: "⟳";
+            font-size: 20px;
+        }
+        
+        /* 右侧面板 */
+        .control-panel {
+            width: 300px;
+            padding: 25px;
+            background: rgba(15, 22, 32, 0.9);
+            border-left: 1px solid rgba(70, 130, 200, 0.3);
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .voltage-display {
+            background: rgba(10, 15, 30, 0.7);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 25px;
+            box-shadow: 0 0 20px rgba(100, 180, 255, 0.2);
+            border: 1px solid rgba(80, 160, 255, 0.25);
+        }
+        
+        .voltage-display .value {
+            font-size: 38px;
+            color: #80ffdc;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(128, 255, 220, 0.4);
+            margin: 15px 0;
+            letter-spacing: 2px;
+        }
+        
+        .voltage-display .label {
+            color: #a0f0e0;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .electron {
+            background: #ff5252;
+            box-shadow: 0 0 8px rgba(255, 82, 82, 0.6);
+        }
+        
+        .hole {
+            background: #42a5f5;
+            box-shadow: 0 0 8px rgba(66, 165, 245, 0.6);
+        }
+        
+        /* 控制面板 */
+        .controls {
+            background: rgba(10, 15, 30, 0.7);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(70, 130, 200, 0.15);
+            margin-bottom: 25px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .control-label {
+            font-size: 16px;
+            color: #90c0ff;
+            font-weight: 500;
+        }
+        
+        .value-display {
+            font-size: 18px;
+            font-family: monospace;
+            color: #80ffdc;
+            background: rgba(0, 10, 20, 0.5);
+            padding: 5px 12px;
+            border-radius: 6px;
+            min-width: 70px;
+            text-align: center;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 12px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #203a5c, #2c5c84);
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #50c8ff;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(80, 200, 255, 0.8);
+            border: 2px solid #ffffff;
+        }
+        
+        /* 信息面板 */
+        .info-section {
+            background: rgba(10, 30, 50, 0.4);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(70, 130, 200, 0.15);
+        }
+        
+        .info-section h2 {
+            color: #50c8ff;
+            font-size: 22px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(80, 200, 255, 0.3);
+        }
+        
+        .info-section p {
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            color: #cddfff;
+        }
+        
+        .formula {
+            font-family: 'Consolas', monospace;
+            background: rgba(20, 40, 60, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 18px;
+            color: #80ffdc;
+            border: 1px solid rgba(80, 200, 255, 0.3);
+        }
+        
+        .instructions {
+            margin-top: 5px;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .speed-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 14px;
+            color: #80ffdc;
+            border: 1px solid rgba(128, 255, 220, 0.3);
+        }
+        
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 165, 0, 0.6);
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 14px;
+            color: white;
+        }
+        
+        /* 背景特效 */
+        .blob {
+            position: fixed;
+            z-index: -1;
+            filter: blur(50px);
+            opacity: 0.2;
+            pointer-events: none;
+        }
+        
+        .blob-1 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, #3498db, transparent 60%);
+            top: -100px;
+            right: -100px;
+        }
+        
+        .blob-2 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, #ff5252, transparent 60%);
+            bottom: -150px;
+            left: -100px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景特效 -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    
+    <div class="container">
+        <!-- 仿真区 -->
+        <div class="simulation-section">
+            <div class="header-3d">
+                <h1>三维霍尔效应模拟器</h1>
+                <p>调整电流与磁场强度，观察电子运动和霍尔电压的变化</p>
+            </div>
+            
+            <div class="canvas-container">
+                <div class="speed-indicator">
+                    电子速度: <span id="speedValue">0.0</span> px/frame
+                </div>
+                <div class="status-indicator">
+                    当前状态: <span id="statusInfo">空闲（电流和磁场为0）</span>
+                </div>
+                <button class="reset-button" id="resetButton">重置系统</button>
+                <canvas id="simulationCanvas" width="650" height="450"></canvas>
+                <div class="current-direction">电流方向</div>
+            </div>
+        </div>
+        
+        <!-- 控制与信息面板 -->
+        <div class="control-panel">
+            <!-- 霍尔电压显示 -->
+            <div class="voltage-display">
+                <div class="label">当前霍尔电压</div>
+                <div class="value" id="hallVoltage">0.00 V</div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot electron"></div>
+                        <span>电子</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot hole"></div>
+                        <span>空穴</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 控制面板 -->
+            <div class="controls">
+                <div class="control-group">
+                    <div class="control-header">
+                        <div class="control-label">电流强度</div>
+                        <div class="value-display" id="currentValue">0.0 A</div>
+                    </div>
+                    <input type="range" id="currentSlider" min="0" max="10" value="0" step="0.5">
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-header">
+                        <div class="control-label">磁场强度</div>
+                        <div class="value-display" id="magneticValue">0.0 T</div>
+                    </div>
+                    <input type="range" id="magneticSlider" min="0" max="5" value="0" step="0.1">
+                </div>
+            </div>
+            
+            <!-- 信息面板 -->
+            <div class="info-section">
+                <h2>霍尔效应原理</h2>
+                <p>当电流通过置于磁场中的导体时，运动电荷受到洛伦兹力作用而发生偏转，从而在导体两侧形成电势差，称为霍尔电压。</p>
+                <div class="formula">
+                    V<sub>H</sub> = (I × B) / (n × e × d)
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h2>模拟说明</h2>
+                <ul class="instructions">
+                    <li>调整电流强度滑块控制导体中的电流</li>
+                    <li>调整磁场强度滑块控制磁场</li>
+                    <li>当电流为零时，电子只做微小热运动</li>
+                    <li>当电流增加时，电子获得沿电流相反方向的漂移速度</li>
+                    <li>施加磁场时，电子受到洛伦兹力而向上偏转</li>
+                    <li>使用"重置系统"按钮可重新开始模拟</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 初始化Canvas元素
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 霍尔元件参数
+        const conductor = {
+            x: canvas.width * 0.1,
+            y: canvas.height * 0.15,
+            width: canvas.width * 0.5,
+            height: canvas.height * 0.6,
+            borderWidth: 4,
+            cornerRadius: 12
+        };
+        
+        // 电极参数
+        const electrodes = {
+            left: {
+                x: conductor.x - 18,
+                y: conductor.y,
+                width: 18,
+                height: conductor.height
+            },
+            right: {
+                x: conductor.x + conductor.width,
+                y: conductor.y,
+                width: 18,
+                height: conductor.height
+            }
+        };
+        
+        // 霍尔电压标记
+        const voltageMarker = {
+            top: {
+                x: conductor.x + conductor.width + 25,
+                y: conductor.y + 20
+            },
+            bottom: {
+                x: conductor.x + conductor.width + 25,
+                y: conductor.y + conductor.height - 20
+            }
+        };
+        
+        // 粒子系统
+        const PARTICLE_COUNT = 35;
+        const PARTICLE_RADIUS = 6;
+        const ELECTRON_COLOR = '#FF5252';
+        const HOLE_COLOR = '#42A5F5';
+        let particles = [];
+        
+        // 初始化函数
+        function init() {
+            createParticles();
+            initMagneticField();
+        }
+        
+        // 生成粒子（电子和空穴）
+        function createParticles() {
+            particles = [];
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                const isElectron = Math.random() > 0.3;
+                particles.push({
+                    x: Math.random() * (conductor.width - 40) + conductor.x + 20,
+                    y: Math.random() * (conductor.height - 40) + conductor.y + 20,
+                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: (Math.random() - 0.5) * 0.8,
+                    type: isElectron ? 'electron' : 'hole',
+                    driftX: 0,
+                    driftY: 0,
+                    color: isElectron ? ELECTRON_COLOR : HOLE_COLOR,
+                    radius: PARTICLE_RADIUS,
+                    trail: [],
+                    maxTrail: 15
+                });
+            }
+        }
+        
+        // 磁场数据
+        const magneticField = {
+            lines: [],
+            lineCount: 10
+        };
+        
+        // 初始化磁场线
+        function initMagneticField() {
+            magneticField.lines = [];
+            const spacing = conductor.height / (magneticField.lineCount - 1);
+            
+            for (let i = 0; i < magneticField.lineCount; i++) {
+                const curveFactor = (Math.random() - 0.5) * 30;
+                magneticField.lines.push({
+                    startY: conductor.y + i * spacing,
+                    curve: curveFactor
+                });
+            }
+        }
+        
+        // 绘制霍尔元件
+        function drawConductor() {
+            ctx.save();
+            
+            // 导体的3D效果
+            const gradient = ctx.createLinearGradient(0, conductor.y, 0, conductor.y + conductor.height);
+            gradient.addColorStop(0, '#FFB74D');
+            gradient.addColorStop(1, '#FF9800');
+            
+            ctx.beginPath();
+            ctx.moveTo(conductor.x + conductor.cornerRadius, conductor.y);
+            ctx.lineTo(conductor.x + conductor.width - conductor.cornerRadius, conductor.y);
+            ctx.arcTo(conductor.x + conductor.width, conductor.y, 
+                     conductor.x + conductor.width, conductor.y + conductor.cornerRadius, conductor.cornerRadius);
+            ctx.lineTo(conductor.x + conductor.width, conductor.y + conductor.height - conductor.cornerRadius);
+            ctx.arcTo(conductor.x + conductor.width, conductor.y + conductor.height, 
+                     conductor.x + conductor.width - conductor.cornerRadius, conductor.y + conductor.height, conductor.cornerRadius);
+            ctx.lineTo(conductor.x + conductor.cornerRadius, conductor.y + conductor.height);
+            ctx.arcTo(conductor.x, conductor.y + conductor.height, 
+                     conductor.x, conductor.y + conductor.height - conductor.cornerRadius, conductor.cornerRadius);
+            ctx.lineTo(conductor.x, conductor.y + conductor.cornerRadius);
+            ctx.arcTo(conductor.x, conductor.y, 
+                     conductor.x + conductor.cornerRadius, conductor.y, conductor.cornerRadius);
+            ctx.closePath();
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // 金属光泽效果
+            ctx.beginPath();
+            ctx.moveTo(conductor.x + 5, conductor.y + 5);
+            ctx.lineTo(conductor.x + conductor.width - 5, conductor.y + 5);
+            ctx.lineTo(conductor.x + conductor.width - 5, conductor.y + 10);
+            ctx.lineTo(conductor.x + 5, conductor.y + 10);
+            ctx.closePath();
+            
+            const shineGradient = ctx.createLinearGradient(0, conductor.y, 0, conductor.y + 10);
+            shineGradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+            shineGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            
+            ctx.fillStyle = shineGradient;
+            ctx.fill();
+            
+            // 导体边框
+            ctx.strokeStyle = '#E65100';
+            ctx.lineWidth = conductor.borderWidth;
+            ctx.stroke();
+            
+            // 电极
+            const electrodeGradient = ctx.createLinearGradient(0, conductor.y, 0, conductor.y + conductor.height);
+            electrodeGradient.addColorStop(0, '#616161');
+            electrodeGradient.addColorStop(1, '#424242');
+            
+            ctx.fillStyle = electrodeGradient;
+            ctx.fillRect(electrodes.left.x, electrodes.left.y, electrodes.left.width, electrodes.left.height);
+            ctx.fillRect(electrodes.right.x, electrodes.right.y, electrodes.right.width, electrodes.right.height);
+            
+            ctx.restore();
+        }
+        
+        // 绘制磁场线
+        function drawMagneticField() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(66, 165, 245, 0.7)';
+            ctx.lineWidth = 1.5;
+            ctx.lineCap = 'round';
+            
+            magneticField.lines.forEach(line => {
+                ctx.beginPath();
+                ctx.moveTo(conductor.x + 10, line.startY);
+                
+                // 曲线
+                for (let x = conductor.x + 20; x <= conductor.x + conductor.width - 20; x += 20) {
+                    const deviation = Math.sin((x - conductor.x) / conductor.width * Math.PI) * line.curve;
+                    ctx.lineTo(x, line.startY + deviation);
+                }
+                
+                ctx.stroke();
+                
+                // 箭头
+                const arrowX = conductor.x + conductor.width - 15;
+                ctx.beginPath();
+                ctx.moveTo(arrowX, line.startY + Math.sin((arrowX - conductor.x) / conductor.width * Math.PI) * line.curve);
+                ctx.lineTo(arrowX - 8, line.startY + Math.sin((arrowX - conductor.x) / conductor.width * Math.PI) * line.curve - 8);
+                ctx.lineTo(arrowX - 8, line.startY + Math.sin((arrowX - conductor.x) / conductor.width * Math.PI) * line.curve + 8);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(66, 165, 245, 0.7)';
+                ctx.fill();
+            });
+            
+            // 磁场标签
+            ctx.fillStyle = 'rgba(66, 165, 245, 0.9)';
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText('B', conductor.x + conductor.width / 2 - 7, conductor.y - 15);
+            
+            ctx.restore();
+        }
+        
+        // 绘制粒子（包含运动轨迹）
+        function drawParticles() {
+            particles.forEach(particle => {
+                // 绘制轨迹
+                ctx.save();
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                particle.trail.forEach((trailPoint, index) => {
+                    const alpha = index / particle.maxTrail * 0.5;
+                    const radius = PARTICLE_RADIUS * (index / particle.maxTrail);
+                    
+                    const gradient = ctx.createRadialGradient(
+                        trailPoint.x, trailPoint.y, 0,
+                        trailPoint.x, trailPoint.y, radius
+                    );
+                    
+                    if (particle.type === 'electron') {
+                        gradient.addColorStop(0, 'rgba(255, 82, 82, 0.8)');
+                        gradient.addColorStop(1, 'rgba(255, 82, 82, 0)');
+                    } else {
+                        gradient.addColorStop(0, 'rgba(66, 165, 245, 0.8)');
+                        gradient.addColorStop(1, 'rgba(66, 165, 245, 0)');
+                    }
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(trailPoint.x, trailPoint.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.restore();
+                
+                // 绘制粒子
+                ctx.save();
+                
+                // 光晕效果
+                const gradient = ctx.createRadialGradient(
+                    particle.x, particle.y, 0,
+                    particle.x, particle.y, PARTICLE_RADIUS * 1.5
+                );
+                
+                if (particle.type === 'electron') {
+                    gradient.addColorStop(0, 'rgba(255, 82, 82, 1)');
+                    gradient.addColorStop(1, 'rgba(255, 82, 82, 0.2)');
+                } else {
+                    gradient.addColorStop(0, 'rgba(66, 165, 245, 1)');
+                    gradient.addColorStop(1, 'rgba(66, 165, 245, 0.2)');
+                }
+                
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, PARTICLE_RADIUS * 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // 粒子本体
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, PARTICLE_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = particle.color;
+                ctx.fill();
+                
+                // 粒子符号
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                if (particle.type === 'electron') {
+                    ctx.fillText('e⁻', particle.x, particle.y);
+                } else {
+                    ctx.fillText('h⁺', particle.x, particle.y);
+                }
+                
+                ctx.restore();
+                
+                // 记录轨迹
+                particle.trail.push({x: particle.x, y: particle.y});
+                if (particle.trail.length > particle.maxTrail) {
+                    particle.trail.shift();
+                }
+            });
+        }
+        
+        // 绘制霍尔电压标记
+        function drawVoltageMarkers() {
+            // 正极标记
+            ctx.save();
+            ctx.strokeStyle = '#FF5252';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(conductor.x + conductor.width + 5, conductor.y + 25);
+            ctx.lineTo(voltageMarker.top.x, voltageMarker.top.y);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#FF5252';
+            ctx.font = 'bold 28px Arial';
+            ctx.fillText('+', voltageMarker.top.x, voltageMarker.top.y - 15);
+            
+            // 负极标记
+            ctx.strokeStyle = '#42A5F5';
+            ctx.beginPath();
+            ctx.moveTo(conductor.x + conductor.width + 5, conductor.y + conductor.height - 25);
+            ctx.lineTo(voltageMarker.bottom.x, voltageMarker.bottom.y);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#42A5F5';
+            ctx.fillText('-', voltageMarker.bottom.x, voltageMarker.bottom.y - 15);
+            
+            ctx.restore();
+        }
+        
+        // 更新粒子位置
+        function updateParticles(current, magnetic) {
+            const averageSpeed = {x: 0, y: 0};
+            let statusText = "";
+            
+            if (current === 0 && magnetic === 0) {
+                statusText = "空闲（电流和磁场为0）";
+            } else if (current === 0) {
+                statusText = "仅磁场作用（无电流）";
+            } else if (magnetic === 0) {
+                statusText = "仅电流作用（无磁场）";
+            } else {
+                statusText = "霍尔效应作用中";
+            }
+            
+            document.getElementById("statusInfo").textContent = statusText;
+            
+            particles.forEach(particle => {
+                // 热运动
+                particle.x += particle.vx * 0.5;
+                particle.y += particle.vy * 0.5;
+                
+                // 电流引起的漂移
+                if (current > 0) {
+                    const driftDirection = particle.type === 'electron' ? -1 : 1;
+                    particle.driftX = driftDirection * current * 1.2;
+                    
+                    // 增强电子漂移效果
+                    particle.x += particle.driftX * 0.4;
+                    
+                    // 边界检查
+                    if (particle.x < conductor.x + particle.radius + 5) {
+                        particle.x = conductor.x + conductor.width - particle.radius - 5;
+                    } else if (particle.x > conductor.x + conductor.width - particle.radius - 5) {
+                        particle.x = conductor.x + particle.radius + 5;
+                    }
+                }
+                
+                // 磁场引起的漂移
+                if (magnetic > 0) {
+                    const hallForceDirection = particle.type === 'electron' ? -1 : 1;
+                    particle.driftY = hallForceDirection * magnetic * current * 0.6;
+                    particle.y += particle.driftY * 0.4;
+                    
+                    // 边界检查
+                    if (particle.y < conductor.y + particle.radius + 5) {
+                        particle.y = conductor.y + particle.radius + 5;
+                        particle.vy = Math.abs(particle.vy) * 0.8;
+                    } else if (particle.y > conductor.y + conductor.height - particle.radius - 5) {
+                        particle.y = conductor.y + conductor.height - particle.radius - 5;
+                        particle.vy = -Math.abs(particle.vy) * 0.8;
+                    }
+                }
+                
+                // 收集速度数据
+                averageSpeed.x += Math.abs(particle.driftX);
+                averageSpeed.y += Math.abs(particle.driftY);
+            });
+            
+            // 更新速度指示器
+            const avgSpeed = (averageSpeed.x + averageSpeed.y) / (particles.length * 2);
+            document.getElementById('speedValue').textContent = avgSpeed.toFixed(1);
+        }
+        
+        // 更新磁场强度显示
+        function updateMagneticFieldStrength(strength) {
+            magneticField.lines.forEach(line => {
+                // 更强的磁场带来更大的曲线偏移
+                line.curve = (Math.random() - 0.5) * 30 * (strength / 5);
+            });
+        }
+        
+        // 重置系统
+        function resetSystem() {
+            currentSlider.value = 0;
+            magneticSlider.value = 0;
+            document.getElementById('currentValue').textContent = "0.0 A";
+            document.getElementById('magneticValue').textContent = "0.0 T";
+            document.getElementById('hallVoltage').textContent = "0.00 V";
+            document.getElementById('speedValue').textContent = "0.0";
+            document.getElementById('statusInfo').textContent = "空闲（电流和磁场为0）";
+            createParticles();
+            initMagneticField();
+        }
+        
+        // 渲染函数
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制背景
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGradient.addColorStop(0, '#131e28');
+            bgGradient.addColorStop(1, '#0c121c');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制所有元素
+            drawConductor();
+            drawMagneticField();
+            drawParticles();
+            drawVoltageMarkers();
+        }
+        
+        // 初始化滑块事件
+        const currentSlider = document.getElementById('currentSlider');
+        const magneticSlider = document.getElementById('magneticSlider');
+        const currentValue = document.getElementById('currentValue');
+        const magneticValue = document.getElementById('magneticValue');
+        const resetButton = document.getElementById('resetButton');
+        
+        // 初始化动画循环
+        function animate() {
+            const current = parseFloat(currentSlider.value);
+            const magnetic = parseFloat(magneticSlider.value);
+            
+            updateParticles(current, magnetic);
+            
+            // 更新霍尔电压显示
+            document.getElementById('hallVoltage').textContent = 
+                (current * magnetic * 0.25).toFixed(2);
+            
+            render();
+            requestAnimationFrame(animate);
+        }
+        
+        // 初始化页面
+        window.onload = function() {
+            // 设置初始值
+            init();
+            
+            // 监听滑块变化
+            currentSlider.addEventListener('input', function() {
+                currentValue.textContent = this.value + ' A';
+            });
+            
+            magneticSlider.addEventListener('input', function() {
+                magneticValue.textContent = this.value + ' T';
+                updateMagneticFieldStrength(parseFloat(this.value));
+            });
+            
+            // 绑定重置按钮事件
+            resetButton.addEventListener('click', resetSystem);
+            
+            // 启动动画
+            animate();
+        };
+    </script>
+</body>
+</html>
