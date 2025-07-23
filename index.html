@@ -13,7 +13,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            background: linear-gradient(135deg, #0d1820, #16242f, #1d3040);
             color: #f0f0f0;
             min-height: 100vh;
             overflow: hidden;
@@ -27,7 +27,7 @@
             max-width: 1400px;
             width: 95%;
             height: 95vh;
-            background: rgba(20, 25, 33, 0.85);
+            background: rgba(18, 24, 33, 0.9);
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
             overflow: hidden;
@@ -51,7 +51,7 @@
         .header-3d h1 {
             font-size: 32px;
             color: #50c8ff;
-            text-shadow: 0 0 10px rgba(80, 200, 255, 0.4);
+            text-shadow: 0 0 10px rgba(80, 200, 255, 极0.4);
             margin-bottom: 10px;
             letter-spacing: 1.5px;
         }
@@ -79,9 +79,11 @@
         }
         
         #simulationCanvas {
-            background: linear-gradient(160deg, #131e28, #0c121c);
+            background: linear-gradient(160deg, #0f1a22, #0a1018);
             border-radius: 12px;
             box-shadow: 0 0 25px rgba(20, 130, 230, 0.25);
+            width: 650px;
+            height: 450px;
         }
         
         .current-direction {
@@ -134,6 +136,31 @@
         .reset-button::before {
             content: "⟳";
             font-size: 20px;
+        }
+        
+        /* 右上角指示器 */
+        .speed-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 14px;
+            color: #80ffdc;
+            border: 1px solid rgba(128, 255, 220, 0.3);
+        }
+        
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 165, 0, 0.6);
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 14px;
+            color: white;
         }
         
         /* 右侧面板 */
@@ -304,30 +331,9 @@
         
         .instructions li {
             margin-bottom: 8px;
-        }
-        
-        .speed-indicator {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 20px;
-            padding: 8px 15px;
-            font-size: 14px;
-            color: #80ffdc;
-            border: 1px solid rgba(128, 255, 220, 0.3);
-        }
-        
-        .status-indicator {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 165, 0, 0.6);
-            border-radius: 20px;
-            padding: 8px 15px;
-            font-size: 14px;
-            color: white;
+            font-size: 15px;
+            color: #cddfff;
+            line-height: 1.6;
         }
         
         /* 背景特效 */
@@ -341,7 +347,7 @@
         
         .blob-1 {
             width: 300px;
-            height: 300px;
+            height: 300极;
             background: radial-gradient(circle, #3498db, transparent 60%);
             top: -100px;
             right: -100px;
@@ -365,7 +371,7 @@
         <!-- 仿真区 -->
         <div class="simulation-section">
             <div class="header-3d">
-                <h1>三维霍尔效应模拟器</h1>
+                <h1>三维霍尔效应模拟器</h极>
                 <p>调整电流与磁场强度，观察电子运动和霍尔电压的变化</p>
             </div>
             
@@ -387,7 +393,7 @@
             <!-- 霍尔电压显示 -->
             <div class="voltage-display">
                 <div class="label">当前霍尔电压</div>
-                <div class="value" id="hallVoltage">0.00 V</div>
+                <div class="value" id="hallVoltage">0.00<span class="unit"> V</span></div>
                 <div class="legend">
                     <div class="legend-item">
                         <div class="legend-dot electron"></div>
@@ -395,7 +401,7 @@
                     </div>
                     <div class="legend-item">
                         <div class="legend-dot hole"></div>
-                        <span>空穴</span>
+                        <span>正电荷</span>
                     </div>
                 </div>
             </div>
@@ -454,7 +460,8 @@
             width: canvas.width * 0.5,
             height: canvas.height * 0.6,
             borderWidth: 4,
-            cornerRadius: 12
+            cornerRadius: 12,
+            color: '#FF9800'
         };
         
         // 电极参数
@@ -498,7 +505,7 @@
             initMagneticField();
         }
         
-        // 生成粒子（电子和空穴）
+        // 生成粒子（电子和正电荷）
         function createParticles() {
             particles = [];
             for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -546,7 +553,7 @@
             // 导体的3D效果
             const gradient = ctx.createLinearGradient(0, conductor.y, 0, conductor.y + conductor.height);
             gradient.addColorStop(0, '#FFB74D');
-            gradient.addColorStop(1, '#FF9800');
+            gradient.addColorStop(1, conductor.color);
             
             ctx.beginPath();
             ctx.moveTo(conductor.x + conductor.cornerRadius, conductor.y);
@@ -643,27 +650,19 @@
                 // 绘制轨迹
                 ctx.save();
                 ctx.globalAlpha = 0.3;
-                ctx.beginPath();
                 particle.trail.forEach((trailPoint, index) => {
                     const alpha = index / particle.maxTrail * 0.5;
                     const radius = PARTICLE_RADIUS * (index / particle.maxTrail);
                     
-                    const gradient = ctx.createRadialGradient(
-                        trailPoint.x, trailPoint.y, 0,
-                        trailPoint.x, trailPoint.y, radius
-                    );
-                    
-                    if (particle.type === 'electron') {
-                        gradient.addColorStop(0, 'rgba(255, 82, 82, 0.8)');
-                        gradient.addColorStop(1, 'rgba(255, 82, 82, 0)');
-                    } else {
-                        gradient.addColorStop(0, 'rgba(66, 165, 245, 0.8)');
-                        gradient.addColorStop(1, 'rgba(66, 165, 245, 0)');
-                    }
-                    
-                    ctx.fillStyle = gradient;
                     ctx.beginPath();
                     ctx.arc(trailPoint.x, trailPoint.y, radius, 0, Math.PI * 2);
+                    
+                    if (particle.type === 'electron') {
+                        ctx.fillStyle = `rgba(255, 82, 82, ${alpha})`;
+                    } else {
+                        ctx.fillStyle = `rgba(66, 165, 245, ${alpha})`;
+                    }
+                    
                     ctx.fill();
                 });
                 ctx.restore();
@@ -705,7 +704,7 @@
                 if (particle.type === 'electron') {
                     ctx.fillText('e⁻', particle.x, particle.y);
                 } else {
-                    ctx.fillText('h⁺', particle.x, particle.y);
+                    ctx.fillText('e⁺', particle.x, particle.y);
                 }
                 
                 ctx.restore();
@@ -824,7 +823,7 @@
             magneticSlider.value = 0;
             document.getElementById('currentValue').textContent = "0.0 A";
             document.getElementById('magneticValue').textContent = "0.0 T";
-            document.getElementById('hallVoltage').textContent = "0.00 V";
+            document.getElementById('hallVoltage').textContent = "0.00";
             document.getElementById('speedValue').textContent = "0.0";
             document.getElementById('statusInfo').textContent = "空闲（电流和磁场为0）";
             createParticles();
@@ -837,8 +836,8 @@
             
             // 绘制背景
             const bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            bgGradient.addColorStop(0, '#131e28');
-            bgGradient.addColorStop(1, '#0c121c');
+            bgGradient.addColorStop(0, '#0f1a22');
+            bgGradient.addColorStop(1, '#0a1018');
             ctx.fillStyle = bgGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -860,12 +859,12 @@
         function animate() {
             const current = parseFloat(currentSlider.value);
             const magnetic = parseFloat(magneticSlider.value);
+            const voltage = current * magnetic * 0.25;
             
             updateParticles(current, magnetic);
             
             // 更新霍尔电压显示
-            document.getElementById('hallVoltage').textContent = 
-                (current * magnetic * 0.25).toFixed(2);
+            document.getElementById('hallVoltage').textContent = voltage.toFixed(2);
             
             render();
             requestAnimationFrame(animate);
